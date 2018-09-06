@@ -15,7 +15,7 @@ import java.util.List;
 
 public class FooReactiveAuthenticationManager implements ReactiveAuthenticationManager {
 
-    private final Scheduler scheduler = Schedulers.parallel();
+    private final Scheduler scheduler = Schedulers.elastic();
 
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {

@@ -13,7 +13,6 @@ and `yyy`.
 
 **Notes:**
 - using `RouterFunction` bean instead of `RestController` doesn't make a difference
-- swapping out *jackson* for *gson* doesn't make a difference
 - changing the controller method signature from `public Mono<Void> updateFoo(@RequestBody Mono<Request> request)` to 
 `public Mono<Void> updateFoo(@RequestBody Request request)` doesn't make a difference.
 - changing the controller method signature to `public Mono<Void> updateFoo(@RequestBody String request)` i.e. making the request body a simple `String`
@@ -56,7 +55,7 @@ public class FooReactiveAuthenticationManager implements ReactiveAuthenticationM
 1. Run the app: `./gradlew bootRun`
 
 2. Run the below commands in two separate terminals simultaneously. You can use Apache Bench (ab) or [hey](https://github.com/rakyll/hey). 
-With enough concurrency you'll be able to reproduce the issue. I've set the concurrency 100 but you might be able to to lower it and still see the issue.
+With enough concurrency you'll be able to reproduce the issue. I've set the concurrency to 100 but you might be able to lower it.
     ```
     hey -m PUT -d '{"foo": "yyy"}' -H "Authorization: Bearer can-foo" -n 20000 -c 100 -T application/json http://localhost:8080/api/foo
     ```
@@ -76,4 +75,35 @@ ERROR 73367 --- [ctor-http-nio-1] voychris.api.SampleController : foo: yxx
 ERROR 73367 --- [ctor-http-nio-4] voychris.api.SampleController : foo: yxx
 ERROR 73367 --- [ctor-http-nio-3] voychris.api.SampleController : foo: yxx
 ...
+```
+
+### Issue raised
+
+- [Spring Boot](https://github.com/spring-projects/spring-boot/issues/14315)
+- [Spring SPR-17193](https://jira.spring.io/browse/SPR-17193)
+
+### Workaround
+
+The workaround is to disable `USE_THREAD_LOCAL_FOR_BUFFER_RECYCLING` in Jackson. Here's an example:
+
+```java
+@Configuration
+public class WebConfig implements WebFluxConfigurer {
+
+    private final ObjectMapper objectMapper = new ObjectMapper(
+        new JsonFactory().disable(JsonFactory.Feature.USE_THREAD_LOCAL_FOR_BUFFER_RECYCLING));
+
+    @Bean
+    public CodecCustomizer codecCustomizer() {
+        return configurer -> {
+            configurer.defaultCodecs().jackson2JsonDecoder(
+                new Jackson2JsonDecoder(objectMapper)
+            );
+
+            configurer.defaultCodecs().jackson2JsonEncoder(
+                new Jackson2JsonEncoder(objectMapper)
+            );
+        };
+    }
+}
 ```
