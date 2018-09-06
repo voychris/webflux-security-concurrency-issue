@@ -11,7 +11,7 @@ with 20k requests containing `{"foo": "yyy"}` in the body and another 20k reques
 the body in the controller I occasionally get something like `xxy`, `xyx`, `yyx` and all the other permutations of `xxx`
 and `yyy`.
 
-I've ruled out a few things already:
+**Notes:**
 - using `RouterFunction` bean instead of `RestController` doesn't make a difference
 - swapping out *jackson* for *gson* doesn't make a difference
 - changing the controller method signature from `public Mono<Void> updateFoo(@RequestBody Mono<Request> request)` to 
@@ -57,15 +57,15 @@ public class FooReactiveAuthenticationManager implements ReactiveAuthenticationM
 
 2. Run the below commands in two separate terminals simultaneously. You can use Apache Bench (ab) or [hey](https://github.com/rakyll/hey). 
 With enough concurrency you'll be able to reproduce the issue. I've set the concurrency 100 but you might be able to to lower it and still see the issue.
-```
-hey -m PUT -d '{"foo": "yyy"}' -H "Authorization: Bearer can-foo" -n 20000 -c 100 -T application/json http://localhost:8080/api/foo
-```
-
-```
-hey -m PUT -d '{"foo": "xxx"}' -H "Authorization: Bearer can-foo" -n 20000 -c 100 -T application/json http://localhost:8080/api/foo
-```
-
-The only difference in the above is the request body. One carries `foo: xxx`, one `foo: yyy`.
+    ```
+    hey -m PUT -d '{"foo": "yyy"}' -H "Authorization: Bearer can-foo" -n 20000 -c 100 -T application/json http://localhost:8080/api/foo
+    ```
+    
+    ```
+    hey -m PUT -d '{"foo": "xxx"}' -H "Authorization: Bearer can-foo" -n 20000 -c 100 -T application/json http://localhost:8080/api/foo
+    ```
+    
+    The only difference in the above is the payload. One carries `foo: xxx`, one `foo: yyy`.
 
 3. Observe that the request body in the app gets scrambled:
 
